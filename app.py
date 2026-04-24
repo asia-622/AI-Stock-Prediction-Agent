@@ -11,136 +11,132 @@ import model
 import utils
 import agent
 
-st.set_page_config(
-    page_title="AI Stock Prediction Agent",
-    page_icon="📈",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+st.set_page_config(page_title="AI Stock Prediction", page_icon="📈", layout="wide")
 
+# PERFECT COLORS - HIGH VISIBILITY
 st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-    .main { background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #2a1b4d 100%); padding: 2rem; }
-    .stApp { background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #2a1b4d 100%); }
-    h1, h2, h3 { font-family: 'Inter', sans-serif; color: #ffffff; font-weight: 700; }
-    .metric-card { background: rgba(255,255,255,0.1); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; padding: 2rem; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
-    .stMetric > label { color: #a0a0ff !important; font-weight: 500; }
-    .stMetric > div > div { color: #ffffff !important; font-size: 2rem !important; font-weight: 700; }
-    .upload-area { background: rgba(255,255,255,0.05); border: 2px dashed rgba(160,160,255,0.5); border-radius: 15px; padding: 3rem; text-align: center; }
-    .ai-insight { background: linear-gradient(135deg, rgba(102,126,234,0.2), rgba(118,75,162,0.2)); border: 1px solid rgba(102,126,234,0.3); border-radius: 15px; padding: 1.5rem; }
-    </style>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+.main { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 35%, #0f3460 100%); padding: 2rem 1rem; }
+h1 { color: #ffffff !important; font-size: 3rem; font-weight: 700; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+h2 { color: #e0e7ff !important; font-size: 2rem; font-weight: 600; }
+h3 { color: #c7d2fe !important; font-size: 1.5rem; }
+.metric-card { background: rgba(255,255,255,0.15) !important; backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.25); border-radius: 20px; padding: 1.5rem; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+.stMetric > label { color: #e2e8f0 !important; font-size: 1.1rem !important; font-weight: 600 !important; }
+.stMetric > div > div { color: #ffffff !important; font-size: 2.5rem !important; font-weight: 800 !important; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+.upload-area { background: rgba(255,255,255,0.08); border: 2px dashed #60a5fa; border-radius: 15px; padding: 2rem; color: #e2e8f0; }
+.ai-insight { background: linear-gradient(135deg, rgba(99,102,241,0.25), rgba(139,92,246,0.25)); border: 1px solid rgba(99,102,241,0.5); border-radius: 15px; padding: 1.5rem; color: #e2e8f0; }
+.stButton > button { background: linear-gradient(45deg, #3b82f6, #8b5cf6); color: white !important; border-radius: 12px; font-weight: 600; border: none; padding: 0.75rem 2rem; font-size: 1.1rem; }
+.element-container .dataframe { background: rgba(255,255,255,0.1); border-radius: 12px; color: #e2e8f0 !important; }
+.dataframe th { background: rgba(99,102,241,0.3) !important; color: #ffffff !important; }
+.dataframe td { color: #e2e8f0 !important; }
+.stSuccess { background: rgba(34,197,94,0.2); border: 1px solid rgba(34,197,94,0.5); color: #dcfce7; }
+.stError { background: rgba(239,68,68,0.2); border: 1px solid rgba(239,68,68,0.5); color: #fecaca; }
+</style>
 """, unsafe_allow_html=True)
 
 def main():
     st.title("🚀 AI Stock Prediction Agent")
-    st.markdown("### Premium AI-powered stock analysis with unlimited file upload")
+    st.markdown("**Upload CSV → Get AI Predictions Instantly**")
     
-    col1, col2 = st.columns([2, 1])
+    col1, col2 = st.columns([3,1])
     
     with col1:
-        st.markdown("## 📁 Upload Stock Data")
-        uploaded_file = st.file_uploader(
-            "CSV files (Unlimited size - 200MB+)",
-            type="csv",
-            help="Upload CSV with Date and Close columns"
-        )
+        uploaded_file = st.file_uploader("📁 Upload Stock CSV", type="csv", 
+                                       help="Date + Close columns required")
     
     with col2:
-        st.markdown("### 📊 Requirements")
-        st.markdown("• **Date** (YYYY-MM-DD)\n• **Close** price\n• **Optional**: Open, High, Low, Volume")
+        st.markdown("""
+        **✅ Works with:**
+        - Apple, Tesla, Bitcoin
+        - Any stock CSV
+        - 200MB+ files OK!
+        """)
     
-    if uploaded_file is not None:
+    if uploaded_file:
         try:
-            with st.spinner("🔄 Processing dataset..."):
-                df = pd.read_csv(uploaded_file, low_memory=False)
+            with st.spinner("🔄 Processing..."):
+                df = pd.read_csv(uploaded_file)
                 df = utils.clean_stock_data(df)
                 
                 if df.empty:
-                    st.error("❌ No valid data. Needs 'Date' and 'Close' columns.")
+                    st.error("❌ No valid data. Needs Date + Close columns.")
                     st.stop()
             
-            st.success(f"✅ Loaded {len(df):,} rows!")
+            st.success(f"✅ Loaded **{len(df):,} rows**")
             
-            st.markdown("### 👀 Data Preview")
+            st.markdown("### 📊 Data Preview")
             st.dataframe(df.tail(10), use_container_width=True)
             
-            fig = create_stock_charts(df)
+            # Charts
+            fig = model.create_charts(df)
             st.plotly_chart(fig, use_container_width=True)
             
-            if st.button("🎯 Run AI Analysis", key="analyze"):
-                with st.spinner("🤖 AI analyzing..."):
+            # AI Analysis Button
+            if st.button("🎯 **RUN AI PREDICTION**", type="primary"):
+                with st.spinner("🤖 AI Analyzing Trends..."):
                     predictions, latest_price, predicted_price = model.predict_next_price(df)
                     ai_insights = agent.get_trading_insights(latest_price, predicted_price, df)
-                    display_results(latest_price, predicted_price, predictions, ai_insights, df)
+                    display_results(latest_price, predicted_price, predictions, ai_insights)
                     
         except Exception as e:
-            st.error(f"❌ Error: {str(e)}")
-            st.info("💡 Check CSV format: Date (YYYY-MM-DD), Close (numbers)")
+            st.error(f"❌ **Error**: {str(e)}")
+            st.info("💡 **Tip**: CSV needs 'Date' (2024-01-01) and 'Close' (numbers)")
     else:
-        st.info("👆 Upload CSV to start!")
+        st.info("👆 **Upload CSV to start analysis**")
         st.markdown("### 📋 Sample Format")
-        sample = pd.DataFrame({
-            'Date': ['2024-01-01', '2024-01-02'],
-            'Close': [100.0, 102.5],
-            'Volume': [1000000, 1200000]
+        sample_df = pd.DataFrame({
+            'Date': ['2024-01-01', '2024-01-02', '2024-01-03'],
+            'Close': [100.0, 102.5, 105.2],
+            'Volume': [1000000, 1200000, 1100000]
         })
-        st.dataframe(sample)
+        st.dataframe(sample_df)
 
-def create_stock_charts(df):
-    fig = make_subplots(rows=2, cols=1, subplot_titles=('📈 Price', '📊 Volume'), vertical_spacing=0.1, row_heights=[0.7, 0.3])
-    
-    fig.add_trace(go.Scatter(x=df['date'], y=df['close'], name='Close', line=dict(color='#667eea', width=2)), row=1, col=1)
-    
-    if len(df) >= 20:
-        df['ma20'] = df['close'].rolling(20).mean()
-        fig.add_trace(go.Scatter(x=df['date'], y=df['ma20'], name='MA20', line=dict(color='#764ba2')), row=1, col=1)
-    
-    fig.add_trace(go.Bar(x=df['date'], y=df['volume'], name='Volume', marker_color='rgba(102,126,234,0.6)'), row=2, col=1)
-    
-    fig.update_layout(height=600, showlegend=True, title_text="Stock Analysis", xaxis_rangeslider_visible=False, template='plotly_dark')
-    return fig
-
-def display_results(latest_price, predicted_price, predictions, ai_insights, df):
-    st.markdown("## 🎯 AI RESULTS")
+def display_results(latest, predicted, predictions, insights):
+    st.markdown("## 🎯 **AI PREDICTION RESULTS**")
     
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
         st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-        delta = ((predicted_price - latest_price) / latest_price) * 100
-        st.metric("Latest Price", f"${latest_price:.2f}", f"{delta:+.2f}%")
+        delta = ((predicted - latest) / latest) * 100
+        st.metric("**Current Price**", f"${latest:.2f}", f"{delta:+.1f}%")
         st.markdown('</div>', unsafe_allow_html=True)
     
     with col2:
         st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-        st.metric("Predicted", f"${predicted_price:.2f}")
+        st.metric("**Next Price**", f"${predicted:.2f}")
         st.markdown('</div>', unsafe_allow_html=True)
     
     with col3:
         st.markdown('<div class="metric-card ai-insight">', unsafe_allow_html=True)
-        st.metric("Recommendation", ai_insights['recommendation'])
+        st.metric("**AI Signal**", insights['recommendation'])
         st.markdown('</div>', unsafe_allow_html=True)
     
     with col4:
         st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-        st.metric("Risk", ai_insights['risk_level'])
+        st.metric("**Risk Level**", insights['risk_level'])
         st.markdown('</div>', unsafe_allow_html=True)
     
-    st.markdown("### 📊 Prediction Chart")
-    fig_pred = px.line(x=list(range(len(predictions))), y=predictions, title="AI Price Forecast")
-    fig_pred.update_layout(template='plotly_dark')
-    st.plotly_chart(fig_pred, use_container_width=True)
+    # Prediction Chart
+    st.markdown("### 📈 **Price Forecast**")
+    fig = px.line(x=list(range(10)), y=predictions, 
+                  title="AI Predicted Price Movement",
+                  labels={'x':'Days', 'y':'Price ($)'})
+    fig.update_layout(template='plotly_dark', height=400)
+    st.plotly_chart(fig, use_container_width=True)
     
-    st.markdown("### 🤖 AI Insights")
-    st.markdown(f"""
-    **Trend**: {ai_insights['trend']}  
-    **Confidence**: {ai_insights['confidence']:.0f}%  
-    **Analysis**: {ai_insights['explanation']}
-    """)
+    # AI Insights
+    st.markdown("### 🤖 **AI Trading Analysis**")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown(f"**Trend**: {insights['trend']}")
+        st.markdown(f"**Confidence**: {insights['confidence']:.0f}%")
+    with col2:
+        st.markdown(f"**Volatility**: {insights['volatility']:.1f}%")
+        st.markdown(f"**Change**: {insights['change_pct']:+.1f}%")
     
-    st.markdown("---")
-    st.markdown("*Educational use only. Not financial advice.*")
+    st.markdown("**Recommendation**: " + insights['explanation'])
 
 if __name__ == "__main__":
     main()
