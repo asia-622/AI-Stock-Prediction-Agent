@@ -1,73 +1,51 @@
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import MinMaxScaler
-from datetime import datetime
-import warnings
-warnings.filterwarnings('ignore')
 
 def clean_stock_data(df):
-    """Memory-efficient data cleaning for large datasets"""
-    
-    # Convert to lowercase and standardize column names
+    """Clean stock data - Compatible with all pandas versions"""
+    # Standardize column names
     df.columns = df.columns.str.lower().str.strip().str.replace(' ', '_')
     
-    # Required columns mapping
-    col_mapping = {
-        'date': ['date', 'datetime', 'time', 'timestamp', 'Date', 'Datetime'],
-        'close': ['close', 'closing_price', 'close_price', 'Close', 'Closing_Price']
-    }
+    # Find date column
+    date_cols = ['date', 'datetime', 'time']
+    date_col = next((col for col in date_cols if col in df.columns), None)
     
-    # Find required columns
-    date_col = None
-    close_col = None
-    
-    for target, alternatives in col_mapping.items():
-        for alt in alternatives:
-            if alt in df.columns:
-                if target == 'date':
-                    date_col = alt
-                elif target == 'close':
-                    close_col = alt
+    if date_col is None:
+        # Try to find any date-like column
+        for col in df.columns:
+            if 'date' in col or df[col].dtype == 'object':
+                date_col = col
                 break
     
-    if date_col is None or close_col is None:
-        print(f"Missing required columns. Found date: {date_col}, close: {close_col}")
+    # Find close column
+    close_cols = ['close', 'closing_price', 'close_price']
+    close_col = next((col for col in close_cols if col in df.columns), None)
+    
+    if close_col is None:
         return pd.DataFrame()
     
-    # Rename to standard names
+    # Convert date
     df['date'] = pd.to_datetime(df[date_col], errors='coerce')
+    
+    # Convert close to numeric
     df['close'] = pd.to_numeric(df[close_col], errors='coerce')
-    df = df[['date', 'close']].dropna()
-    df = df.sort_values('date').reset_index(drop=True)
     
-    # Optional columns
-    optional = ['open', 'high', 'low', 'volume', 'Open', 'High', 'Low', 'Volume']
-    for col in optional:
-        if col in df.columns:
-            df[col.lower()] = pd.to_numeric(df[col], errors='coerce')
+    # Drop invalid rows
+    df = df[['date', 'close']].dropna().sort_values('date').reset_index(drop=True)
     
-    # Fill optional columns
-    for col in ['open', 'high', 'low', 'volume']:
-        if col not in df.columns:
-            df[col] = 0
-        else:
-            df[col] = df[col].fillna(method='ffill').fillna(0)
+    if len(df) < 2:
+        return pd.DataFrame()
     
-    # Remove outliers
-    df = df[(df['close'] > 0.01)]
+    # Add volume column if exists
+    vol_col = next((col for col in df.columns if 'vol' in col.lower()), None)
+    if vol_col:
+        df['volume'] = pd.to_numeric(df[vol_col], errors='coerce').fillna(0)
+    else:
+        df['volume'] = 1000000  # Default volume
+    
+    # Clean outliers (prices > 0.01 and reasonable changes)
+    df = df[df['close'] > 0.01].copy()
     df['pct_change'] = df['close'].pct_change()
     df = df[df['pct_change'].abs() < 0.5].drop('pct_change', axis=1)
     
     return df
-
-def prepare_lstm_data(df, lookback=60):
-    """Prepare sequential data (for local TensorFlow use)"""
-    scaler = MinMaxScaler()
-    scaled_data = scaler.fit_transform(df[['close']].values)
-    
-    X, y = [], []
-    for i in range(lookback, len(scaled_data)):
-        X.append(scaled_data[i-lookback:i, 0])
-        y.append(scaled_data[i, 0])
-    
-    return np.array(X), np.array(y), scaler
