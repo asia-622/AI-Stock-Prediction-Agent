@@ -1,47 +1,62 @@
+import numpy as np
+
 def get_trading_insights(latest_price, predicted_price, df):
-    """AI Agent for trading decisions"""
+    """AI Trading Agent - Complete with all metrics"""
     
-    price_change = (predicted_price - latest_price) / latest_price * 100
-    volatility = df['close'].pct_change().std() * 100
-    recent_trend = df['close'].tail(20).pct_change().mean() * 100
+    # Calculations
+    change_pct = ((predicted_price - latest_price) / latest_price) * 100
+    df['returns'] = df['close'].pct_change()
+    volatility = df['returns'].std() * 100 * np.sqrt(252)  # Annualized volatility
+    trend = df['close'].tail(20).pct_change().mean() * 100
     
-    # Determine recommendation
-    if price_change > 3:
-        recommendation = "🟢 BUY"
-        confidence = min(95, 70 + abs(price_change))
-    elif price_change > 0:
-        recommendation = "🟡 HOLD"
-        confidence = min(85, 60 + price_change * 10)
-    elif price_change > -3:
-        recommendation = "🟡 HOLD"
-        confidence = min(75, 50 - abs(price_change) * 5)
+    # Trading Signal
+    if change_pct > 3:
+        recommendation = "🟢 **STRONG BUY**"
+        confidence = 90
+    elif change_pct > 1:
+        recommendation = "🟢 **BUY**"
+        confidence = 75
+    elif change_pct > -1:
+        recommendation = "🟡 **HOLD**"
+        confidence = 60
+    elif change_pct > -3:
+        recommendation = "🟠 **WEAK SELL**"
+        confidence = 70
     else:
-        recommendation = "🔴 SELL"
-        confidence = min(90, 65 + abs(price_change))
+        recommendation = "🔴 **STRONG SELL**"
+        confidence = 85
     
-    # Risk assessment
-    if volatility < 2:
-        risk_level = "🟢 LOW"
-    elif volatility < 5:
-        risk_level = "🟡 MEDIUM"
+    # Risk Level
+    if volatility < 20:
+        risk_level = "🟢 **LOW**"
+    elif volatility < 40:
+        risk_level = "🟡 **MEDIUM**"
     else:
-        risk_level = "🔴 HIGH"
+        risk_level = "🔴 **HIGH**"
     
-    # Trend direction
-    trend = "🟢 UPWARD" if recent_trend > 0 else "🔴 DOWNWARD"
+    # Trend
+    if trend > 1:
+        trend_text = "🟢 **BULLISH**"
+    elif trend > -1:
+        trend_text = "🟡 **SIDEWAYS**"
+    else:
+        trend_text = "🔴 **BEARISH**"
     
-    # Generate explanation
+    # Explanation
     explanations = {
-        "🟢 BUY": f"Strong upward momentum detected ({price_change:+.2f}%). Recent trend: {recent_trend:+.2f}%. Low risk entry point.",
-        "🔴 SELL": f"Significant downward pressure ({price_change:+.2f}%). High volatility suggests exit strategy.",
-        "🟡 HOLD": f"Sideways market with {price_change:+.2f}% predicted change. Monitor for breakout."
+        "🟢 **STRONG BUY**": f"**Powerful upside** ({change_pct:+.1f}%) with low volatility ({volatility:.0f}%)",
+        "🟢 **BUY**": f"**Good entry** ({change_pct:+.1f}%) - bullish trend",
+        "🟡 **HOLD**": f"**Wait for breakout** ({change_pct:+.1f}%) - sideways market",
+        "🟠 **WEAK SELL**": f"**Minor pullback** ({change_pct:+.1f}%) - reduce position",
+        "🔴 **STRONG SELL**": f"**Exit now** ({change_pct:+.1f}%) - high risk"
     }
     
     return {
         'recommendation': recommendation,
         'risk_level': risk_level,
-        'trend': trend,
+        'trend': trend_text,
         'confidence': confidence,
-        'explanation': explanations.get(recommendation, "Analyzing market conditions..."),
-        'price_change_pct': price_change
+        'volatility': volatility,
+        'change_pct': change_pct,
+        'explanation': explanations.get(recommendation, "Analyzing...")
     }
